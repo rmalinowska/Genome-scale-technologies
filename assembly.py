@@ -13,7 +13,6 @@ def kmerHist(reads, k):
     ''' Return k-mer histogram and average # k-mer occurrences '''
     kmerhist = {}
     for read in reads:
-        print(k,"- mery dla", read,"\n\n", [ read[i:i+k] for i in range(len(read)-(k-1)) ], '\n')
         for kmer in [ read[i:i+k] for i in range(len(read)-(k-1)) ]:
             kmerhist[kmer] = kmerhist.get(kmer, 0) + 1
     return kmerhist
@@ -75,10 +74,23 @@ class DeBruijnGraph:
         self.nodes = set()
         self.edges = {}
         for st in strIter:
-            _, left, right = self.chop(st, k)
-            self.nodes.add(left)
-            self.nodes.add(right)
-            if (left, right) in self.edges.keys():
-                self.edges[(left, right)] += 1
-            else:
-                self.edges[(left, right)] = 1
+            for _, left, right in self.chop(st, k):
+                self.nodes.add(left)
+                self.nodes.add(right)
+                if (left, right) in self.edges.keys():
+                    self.edges[(left, right)] += 1
+                else:
+                    self.edges[(left, right)] = 1
+
+FILE = "c:/Users/roksa/Desktop/sem7/TWSG2/projekt2/training/reads/reads1.fasta"
+K = 20
+THRESHOLD = 1
+
+def main():
+    reads = import_reads(FILE)
+    corrected_reads = correct_reads(reads, K, "ACTG", THRESHOLD)
+    deBruijnG = DeBruijnGraph(corrected_reads, K)
+    print(deBruijnG.nodes)
+
+if __name__ == "__main__":
+    main()
