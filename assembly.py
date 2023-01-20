@@ -22,23 +22,6 @@ def import_reads(filename):
         reads.append(record.seq)
     return reads
 
-
-def overlap(a, b, min_length=3):
-    """ Return length of longest suffix of 'a' matching
-        a prefix of 'b' that is at least 'min_length'
-        characters long.  If no such overlap exists,
-        return 0. """
-    start = 0  # start all the way at the left
-    while True:
-        start = a.find(b[:min_length], start)  # look for b's suffx in a
-        # print(start)
-        if start == -1:  # no more occurrences to right
-            return 0
-        # found occurrence; check for full suffix/prefix match
-        if b.startswith(a[start:]):
-            return len(a)-start
-        start += 1  # move just past previous match
-
 def kmerHist(reads, k):
     ''' Return k-mer histogram and average # k-mer occurrences '''
     kmerhist = {}
@@ -113,7 +96,6 @@ class DeBruijnGraph:
                     self.edges[(left, right)] = 1
 
     def contigs(self):
-
         def values(self):
             maximal = 0
             self.values = {}
@@ -127,40 +109,31 @@ class DeBruijnGraph:
         while self.edges != {}:
             maximal = values(self)
             to_merge = self.values[maximal][0]
-            del self.values[maximal][0]
-
             del self.edges[to_merge]
 
-            common = overlap(to_merge[0], to_merge[1], 1)
-            merged = to_merge[0] + to_merge[1][common:]
+            merged = to_merge[0] + to_merge[1][K-2:]
+            edges_copy = list(self.edges.keys())
 
-            keys = list(self.edges.keys())
+            if to_merge[0] == to_merge[1]:
+                print("TAKIE SAME")
 
-            merge0_count = 0
-            merge1_count = 0
-
-            for i in keys:
-                if i[0] == to_merge[0]:
-                    merge0_count += 1
-                if i[1] == to_merge[1]:
-                    merge1_count += 1
-
+            for i in edges_copy:
                 if i[1] == to_merge[0]:
                     new = (i[0], merged)
-                    k = self.edges.pop(i, None)
+                    k = self.edges.pop(i)
                     self.edges[new] = k
 
                 if i[0] == to_merge[1]:
                     new = (merged, i[1])
-                    k = self.edges.pop(i, None)
-                    self.edges[new] = k
+                    try:
+                        k = self.edges.pop(i)
+                        self.edges[new] = k
+                    except KeyError:
+                        self.edges[new] = k
 
-            if merge0_count == 0:
-                self.nodes.remove(to_merge[0])
-            if merge1_count == 0:
-                self.nodes.remove(to_merge[1])
+            self.nodes.discard(to_merge[0])
+            self.nodes.discard(to_merge[1])
             self.nodes.add(merged)
-
 
 # FILE = "c:/Users/roksa/Desktop/sem7/TWSG2/projekt2/training/reads/reads1.fasta"
 FILE = input_file
