@@ -170,9 +170,9 @@ THRESHOLD = 1
 
 def main():
     reads = import_reads(FILE)
-    # corrected_reads = correct_reads(reads, K, "ACTG", THRESHOLD)
-    # deBruijnG = DeBruijnGraph(corrected_reads, K)
-    deBruijnG = DeBruijnGraph(reads, K)
+    corrected_reads = correct_reads(reads, K, "ACTG", THRESHOLD)
+    deBruijnG = DeBruijnGraph(corrected_reads, K)
+    # deBruijnG = DeBruijnGraph(reads, K)
 
 
     deBruijnG.contigs()
