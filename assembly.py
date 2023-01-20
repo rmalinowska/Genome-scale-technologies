@@ -3,6 +3,7 @@
 from Bio import SeqIO
 
 import argparse
+import copy
 
 parser = argparse.ArgumentParser()
 parser.add_argument('input_file', type = str)
@@ -95,51 +96,41 @@ class DeBruijnGraph:
                 else:
                     self.edges[(left, right)] = 1
 
-    def contigs(self):
-        def values(self):
-            maximal = 0
-            self.values = {}
-            for i, j in self.edges.items():
-                self.values.setdefault(j, []).append(i)
-                if j > maximal:
-                    maximal = j
 
-            return maximal
+def contigs(graph):
 
-        while self.edges != {}:
-            maximal = values(self)
-            to_merge = self.values[maximal][0]
-            del self.edges[to_merge]
+    contigs = list(graph.nodes)
+    edges = graph.edges
 
-            merged = to_merge[0] + to_merge[1][K-2:]
-            edges_copy = list(self.edges.keys())
+    edges = list(dict(sorted(edges.items(), key = lambda item: item[1])).items())
+    while edges != []:
+        to_merge = edges.pop()
 
-            for i in edges_copy:
-                if i[0] == to_merge[0] and i[1] == to_merge[1]:
-                    print("Niby cykl jakiś")
+        merged = to_merge[0][0] + to_merge[0][1][K-2:]
+        next_edges = []
 
-                if i[1] == to_merge[0]:
-                    new = (i[0], merged)
-                    k = self.edges.pop(i)
-                    self.edges[new] = k
+        contigs.remove(to_merge[0][0])
+        contigs.remove(to_merge[0][1])
+        contigs.append(merged)
+        for e in edges:
+            if e[0][0] == to_merge[0][1]:
+                new = (merged, e[0][1])
+                weight = e[1]
+                next_edges.append((new, weight))
 
-                if i[0] == to_merge[1]:
-                    new = (merged, i[1])
-                    try:
-                        k = self.edges.pop(i)
-                        self.edges[new] = k
-                    except KeyError:
-                        self.edges[new] = k
+            elif e[0][1] == to_merge[0][0]:
+                new = (e[0][0], merged)
+                weight = e[1]
+                next_edges.append((new, weight))
 
+            elif e[0][0] != to_merge[0][0] and e[0][1] != to_merge[0][1]:
+                next_edges.append(e)
 
-            self.nodes.discard(to_merge[0])
-            self.nodes.discard(to_merge[1])
-            self.nodes.add(merged)
+        edges = next_edges
+    return contigs
 
-# FILE = "c:/Users/roksa/Desktop/sem7/TWSG2/projekt2/training/reads/reads1.fasta"
 FILE = input_file
-# K = 18
-K = K
+
 THRESHOLD = 1
 
 
@@ -154,22 +145,12 @@ def main():
     reads = import_reads(FILE)
     corrected_reads = correct_reads(reads, K, "ACTG", THRESHOLD)
     deBruijnG = DeBruijnGraph(corrected_reads, K)
-    # deBruijnG = DeBruijnGraph(reads, K)
-
-    deBruijnG.contigs()
-    CONTIGS = list(deBruijnG.nodes)
+    CONTIGS = contigs(deBruijnG)
     CONTIGS = filter_contigs(CONTIGS, 300)
-    # print(deBruijnG.nodes)
-
-
     with open(output_file, 'w+') as f:
         for i, con in enumerate(CONTIGS):
-            f.write(f">read_{i}")
-            f.write("\n")
-            f.write(str(con))
-            f.write('\n')
-
-
+            f.write(f">read_{i}\n")
+            f.write(str(con)+"\n")
 
 if __name__ == "__main__":
     main()
