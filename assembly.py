@@ -1,6 +1,19 @@
-#! /usr/bin/python
+#! /usr/bin/env python3
 
 from Bio import SeqIO
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('input_file', type = str)
+parser.add_argument('output_file', type = str)
+parser.add_argument('K', type = int)
+args = parser.parse_args()
+
+
+input_file = args.input_file
+output_file = args.output_file
+K = args.K
 
 def import_reads(filename):
     reads = []
@@ -8,6 +21,23 @@ def import_reads(filename):
     for record in data:
         reads.append(record.seq)
     return reads
+
+
+def overlap(a, b, min_length=3):
+    """ Return length of longest suffix of 'a' matching
+        a prefix of 'b' that is at least 'min_length'
+        characters long.  If no such overlap exists,
+        return 0. """
+    start = 0  # start all the way at the left
+    while True:
+        start = a.find(b[:min_length], start)  # look for b's suffx in a
+        # print(start)
+        if start == -1:  # no more occurrences to right
+            return 0
+        # found occurrence; check for full suffix/prefix match
+        if b.startswith(a[start:]):
+            return len(a)-start
+        start += 1  # move just past previous match
 
 def kmerHist(reads, k):
     ''' Return k-mer histogram and average # k-mer occurrences '''
@@ -59,17 +89,17 @@ class DeBruijnGraph:
         strings. User supplies strings and k-mer length k.  Nodes
         are k-1-mers.  An Edge corresponds to the k-mer that joins
         a left k-1-mer to a right k-1-mer. '''
- 
+
     @staticmethod
     def chop(st, k):
         ''' Chop string into k-mers of given length '''
         for i in range(len(st)-(k-1)):
             yield (st[i:i+k], st[i:i+k-1], st[i+1:i+k])
-    
+
     def __init__(self, strIter, k):
         ''' Build de Bruijn multigraph given string iterator and k-mer
             length k. Nodes in the graph are implemented as strings in self.nodes set and edges as tuples
-            (left, right):weight, where (left, right) is a directed edge from left to right node and 
+            (left, right):weight, where (left, right) is a directed edge from left to right node and
             weight is number of single edges that would occure between those edges.'''
         self.nodes = set()
         self.edges = {}
@@ -82,15 +112,81 @@ class DeBruijnGraph:
                 else:
                     self.edges[(left, right)] = 1
 
-FILE = "c:/Users/roksa/Desktop/sem7/TWSG2/projekt2/training/reads/reads1.fasta"
-K = 20
+    def contigs(self):
+
+        def values(self):
+            maximal = 0
+            self.values = {}
+            for i, j in self.edges.items():
+                self.values.setdefault(j, []).append(i)
+                if j > maximal:
+                    maximal = j
+
+            return maximal
+
+        while self.edges != {}:
+            maximal = values(self)
+            to_merge = self.values[maximal][0]
+            del self.values[maximal][0]
+
+            del self.edges[to_merge]
+
+            common = overlap(to_merge[0], to_merge[1], 1)
+            merged = to_merge[0] + to_merge[1][common:]
+
+            keys = list(self.edges.keys())
+
+            merge0_count = 0
+            merge1_count = 0
+
+            for i in keys:
+                if i[0] == to_merge[0]:
+                    merge0_count += 1
+                if i[1] == to_merge[1]:
+                    merge1_count += 1
+
+                if i[1] == to_merge[0]:
+                    new = (i[0], merged)
+                    k = self.edges.pop(i, None)
+                    self.edges[new] = k
+
+                if i[0] == to_merge[1]:
+                    new = (merged, i[1])
+                    k = self.edges.pop(i, None)
+                    self.edges[new] = k
+
+            if merge0_count == 0:
+                self.nodes.remove(to_merge[0])
+            if merge1_count == 0:
+                self.nodes.remove(to_merge[1])
+            self.nodes.add(merged)
+
+
+# FILE = "c:/Users/roksa/Desktop/sem7/TWSG2/projekt2/training/reads/reads1.fasta"
+FILE = input_file
+# K = 18
+K = K
 THRESHOLD = 1
 
 def main():
     reads = import_reads(FILE)
     corrected_reads = correct_reads(reads, K, "ACTG", THRESHOLD)
     deBruijnG = DeBruijnGraph(corrected_reads, K)
-    print(deBruijnG.nodes)
+    # deBruijnG = DeBruijnGraph(reads, K)
+
+
+    deBruijnG.contigs()
+    # print(deBruijnG.nodes)
+
+
+    with open(output_file, 'w+') as f:
+        for i, con in enumerate(deBruijnG.nodes):
+            f.write(f">read_{i}")
+            f.write("\n")
+            f.write(str(con))
+            f.write('\n')
+
+
 
 if __name__ == "__main__":
     main()
