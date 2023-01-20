@@ -114,10 +114,10 @@ class DeBruijnGraph:
             merged = to_merge[0] + to_merge[1][K-2:]
             edges_copy = list(self.edges.keys())
 
-            if to_merge[0] == to_merge[1]:
-                print("TAKIE SAME")
-
             for i in edges_copy:
+                if i[0] == to_merge[0] and i[1] == to_merge[1]:
+                    print("Niby cykl jakiś")
+
                 if i[1] == to_merge[0]:
                     new = (i[0], merged)
                     k = self.edges.pop(i)
@@ -131,6 +131,7 @@ class DeBruijnGraph:
                     except KeyError:
                         self.edges[new] = k
 
+
             self.nodes.discard(to_merge[0])
             self.nodes.discard(to_merge[1])
             self.nodes.add(merged)
@@ -141,19 +142,28 @@ FILE = input_file
 K = K
 THRESHOLD = 1
 
+
+def filter_contigs(contigs, minlen):
+    filtered = []
+    for contig in contigs:
+        if len(contig) >= minlen:
+            filtered.append(contig)
+    return filtered
+
 def main():
     reads = import_reads(FILE)
     corrected_reads = correct_reads(reads, K, "ACTG", THRESHOLD)
     deBruijnG = DeBruijnGraph(corrected_reads, K)
     # deBruijnG = DeBruijnGraph(reads, K)
 
-
     deBruijnG.contigs()
+    CONTIGS = list(deBruijnG.nodes)
+    CONTIGS = filter_contigs(CONTIGS, 300)
     # print(deBruijnG.nodes)
 
 
     with open(output_file, 'w+') as f:
-        for i, con in enumerate(deBruijnG.nodes):
+        for i, con in enumerate(CONTIGS):
             f.write(f">read_{i}")
             f.write("\n")
             f.write(str(con))
