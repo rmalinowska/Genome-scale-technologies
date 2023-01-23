@@ -128,7 +128,8 @@ def contigs(graph):
         next_edges = []
 
         contigs.remove(to_merge[0][0])
-        contigs.remove(to_merge[0][1])
+        if to_merge[0][1] in contigs:
+            contigs.remove(to_merge[0][1])
         contigs.append(merged)
         for e in edges:
             if e[0][0] == to_merge[0][1]:
