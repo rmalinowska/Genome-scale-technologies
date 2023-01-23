@@ -27,13 +27,12 @@ import copy
 parser = argparse.ArgumentParser()
 parser.add_argument('input_file', type = str)
 parser.add_argument('output_file', type = str)
-parser.add_argument('K', type = int)
 args = parser.parse_args()
 
 
 input_file = args.input_file
 output_file = args.output_file
-K = args.K
+K = 18
 
 def import_reads(filename):
     reads = []
